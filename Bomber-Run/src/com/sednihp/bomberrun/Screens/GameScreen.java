@@ -3,12 +3,15 @@ package com.sednihp.bomberrun.Screens;
 import java.util.Iterator;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.math.Rectangle;
@@ -19,7 +22,11 @@ import com.sednihp.bomberrun.Entities.Building;
 import com.sednihp.bomberrun.Entities.Bomb;
 import com.sednihp.bomberrun.Entities.Cloud;
 
-public class GameScreen extends BaseScreen {
+public class GameScreen implements Screen {
+	
+	private Engine engine;
+	private SpriteBatch batch;
+	private BitmapFont font;
 	private Texture planeImg, bombImg, cloudImg;
 	private OrthographicCamera camera;
 	private ShapeRenderer shapeRender;
@@ -34,24 +41,25 @@ public class GameScreen extends BaseScreen {
 	private Sound explosion;
 	private int score = 0;
 	
-	
 	public GameScreen(Engine e) 
 	{
-		super(e);
+		engine = e;
+		
+		font = new BitmapFont(Gdx.files.internal("saucerbb.fnt"), false);
+		batch = new SpriteBatch();
+		planeImg = new Texture(Gdx.files.internal("plane.png"));
+		bombImg = new Texture(Gdx.files.internal("bomb.png"));
+		cloudImg = new Texture(Gdx.files.internal("cloud.png"));
+  		planeEngine = Gdx.audio.newMusic(Gdx.files.internal("plane.ogg"));
+  		explosion = Gdx.audio.newSound(Gdx.files.internal("explosion.ogg"));
+  		shapeRender = new ShapeRenderer();
 	}
 	
 	@Override
     public void show() 
-	{
-		super.show();
-		
-		planeImg = new Texture(Gdx.files.internal("plane.png"));
-		bombImg = new Texture(Gdx.files.internal("bomb.png"));
-		cloudImg = new Texture(Gdx.files.internal("cloud.png"));
-		
+	{		
 		camera = new OrthographicCamera();
 		camera.setToOrtho(false, engine.getWidth(), engine.getHeight());
-  		shapeRender = new ShapeRenderer();
   		groundLine = new Rectangle(0,30,engine.getWidth(),1);
   		groundColor = new Color(0.554f, 0.316f, 0.234f, 0);
   		
@@ -73,12 +81,8 @@ public class GameScreen extends BaseScreen {
   			clouds.add(c);
   		}
   		
-  		planeEngine = Gdx.audio.newMusic(Gdx.files.internal("plane.ogg"));
   		planeEngine.setLooping(true);
   		planeEngine.play();
-  		
-  		explosion = Gdx.audio.newSound(Gdx.files.internal("explosion.ogg"));
-  		Gdx.audio.newSound(Gdx.files.internal("crash.ogg"));
     }
 	
 	@Override
@@ -113,7 +117,7 @@ public class GameScreen extends BaseScreen {
 		
 		if(plane.isParked())
 		{
-			engine.setScreen(new MenuScreen(engine));
+			engine.setScreen(engine.getMenuScr());
 		}
 	}
 	
@@ -208,7 +212,7 @@ public class GameScreen extends BaseScreen {
 			}
 			
 			batch.draw(planeImg, plane.x, plane.y);
-			super.font.draw(batch, "Score = " + score, 0, groundLine.y);
+			font.draw(batch, "Score = " + score, 0, groundLine.y);
 		batch.end();
 
 		shapeRender.setProjectionMatrix(camera.combined);
@@ -226,13 +230,38 @@ public class GameScreen extends BaseScreen {
 	@Override
     public void dispose() 
 	{
-		super.dispose();
-		
 		planeImg.dispose();
 		bombImg.dispose();
 		cloudImg.dispose();
 		planeEngine.dispose();
 		explosion.dispose();
 		shapeRender.dispose();
+		
+		font.dispose();
+		batch.dispose();
     }
+	
+	@Override
+	public void hide()
+	{
+	}
+
+	@Override
+	public void resize(int width, int height) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void pause() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void resume() {
+		// TODO Auto-generated method stub
+		
+	}
+	
 }
