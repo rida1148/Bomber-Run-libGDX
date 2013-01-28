@@ -3,6 +3,7 @@ package com.sednihp.bomberrun;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Screen;
 import com.sednihp.bomberrun.Screens.GameScreen;
+import com.sednihp.bomberrun.Screens.LevelOverScreen;
 import com.sednihp.bomberrun.Screens.MenuScreen;
 import com.sednihp.bomberrun.Screens.SplashScreen;
 
@@ -10,9 +11,12 @@ public class Engine extends Game {
 
 	private int width = 800, height = 480;
 	
-	SplashScreen splashScr;
-	MenuScreen menuScr;
-	GameScreen gameScr;
+	private StateManager stateMan;
+	private SplashScreen splashScr;
+	private MenuScreen menuScr;
+	private GameScreen gameScr;
+	private LevelOverScreen lvlOverScr;
+	private Player player;
 	
 	public Engine() 
 	{		
@@ -21,10 +25,27 @@ public class Engine extends Game {
 	@Override
 	public void create() 
 	{
+		stateMan = new StateManager();
 		splashScr = new SplashScreen(this);
 		menuScr = new MenuScreen(this);
 		gameScr = new GameScreen(this);
-		setScreen(getSplashScr());		
+		lvlOverScr = new LevelOverScreen(this);
+		
+		setScreen(getSplashScr());
+		
+		player = new Player();
+	}
+	
+	public void restartGame()
+	{
+		stateMan.restartGame();
+		player.restartGame();
+		setScreen(getGameScr());
+	}
+	
+	public StateManager getStateManager()
+	{
+		return stateMan;
 	}
 
 	public SplashScreen getSplashScr()
@@ -40,6 +61,16 @@ public class Engine extends Game {
 	public GameScreen getGameScr()
 	{
 		return gameScr;
+	}
+	
+	public LevelOverScreen getLvlOverScr()
+	{
+		return lvlOverScr;
+	}
+	
+	public Player getPlayer()
+	{
+		return player;
 	}
 	
 	@Override

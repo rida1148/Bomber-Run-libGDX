@@ -6,25 +6,48 @@ import com.badlogic.gdx.math.Vector2;
 public class Plane extends Rectangle {
 
 	private static final long serialVersionUID = 1L;
-	private int speed = 70;
+	private int speed = 70, speedIncrease, stepDown;
 	private boolean parking = false;
 	private boolean landed = false;
 	private boolean parked = false;
+	private boolean crashed = false;
 	private Vector2 direction;
 
-	public Plane(final int scrHeight) {
+	public Plane(final int scrHeight, final int level)
+	{
 		super(0, 0, 84, 39);
 		super.setX(-width);
 		super.setY(scrHeight - height - 1);
 		this.direction = new Vector2(1,0);
+		
+		speedIncrease = level;
+		stepDown = 10;
 	}
 	
-	public boolean isParked() {
+	public boolean isParking()
+	{
+		return parking;
+	}
+	
+	public boolean isParked() 
+	{
 		return parked;
 	}
 	
-	public void setToPark() {
+	public void setToPark() 
+	{
 		parking = true;
+	}
+	
+	public void crashedIntoBuilding() 
+	{
+		speed = 0;
+		crashed = true;
+	}
+	
+	public boolean hasCrashed() 
+	{
+		return crashed;
 	}
 	
 	public void move(final float dTime, final int scrWidth, final int groundLevel)
@@ -36,38 +59,32 @@ public class Plane extends Rectangle {
 			if(super.x > scrWidth)
 			{
 				super.x = -width;
-				super.y -= 10;
-				speed += 3;
+				super.y -= stepDown;
+				speed += speedIncrease;
+				System.out.println("Speed = " + speed);
 			}
 		}
 		else 
 		{
-			speed = 120;
+			speed = 140;
 			int landingX = scrWidth - 4*(int)super.width;
 			int parkingX = scrWidth - 2*(int)super.width;
 			int parkingY = groundLevel;
 			
 			direction.nor();
 			
-			if(super.x >= scrWidth / 2) 
-			{
-				super.x += direction.x * speed * dTime;
-				
-				if(super.x > scrWidth) 
-				{
-					super.x = -width;
-					
-					direction.x = landingX - super.x;
-					direction.y = super.y - parkingY;
-					
-					direction.nor();
-				}
-			}
-			else
-			{
-				super.x += direction.x * speed * dTime;
-			}
+			super.x += direction.x * speed * dTime;
 			
+			if(super.x > scrWidth) 
+			{
+				super.x = -width;
+				
+				direction.x = landingX - super.x;
+				direction.y = super.y - parkingY;
+				
+				direction.nor();
+			}
+
 			super.y -= direction.y * speed * dTime;
 			
 			if(!landed && super.x >= landingX && super.y <= parkingY)
@@ -81,9 +98,5 @@ public class Plane extends Rectangle {
 			}
 			
 		}
-	}
-	
-	public void hasCrashed() {
-		speed = 0;
 	}
 }

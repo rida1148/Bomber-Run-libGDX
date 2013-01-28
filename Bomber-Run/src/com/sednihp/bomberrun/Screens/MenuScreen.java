@@ -1,8 +1,6 @@
 package com.sednihp.bomberrun.Screens;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Screen;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -12,33 +10,29 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.sednihp.bomberrun.Engine;
 
 
-public class MenuScreen implements Screen {
+public class MenuScreen extends BaseScreen {
 
-	private Engine engine;
-	private final float buttonY = 200f, buttonWidth = 300f, buttonHeight = 60f, buttonSpacing = 20f;
+	private final float buttonY = 200f;
 	private Skin skin;
 	private Stage stage;
-	Label label;
-	TextButton playButton, highScoresButton;
+	private Label label;
+	private TextButton playButton, highScoresButton;
 	
 	public MenuScreen(Engine e) 
 	{
-		engine = e;
+		super(e);
 		skin = new Skin(Gdx.files.internal("uiskin.json"));
 		stage = new Stage(engine.getWidth(), engine.getHeight(), true);
-	}
-	
-	@Override
-	public void show()
-	{
+		label = new Label("Welcome to Bomber Run", skin);
+		playButton = new TextButton("Play", skin);
+		highScoresButton = new TextButton("High Scores", skin);
+		
 		float buttonX = (engine.getWidth() - buttonWidth)/2;
         
-        label = new Label("Welcome to Bomber Run", skin);
         label.setX((engine.getWidth() - label.getWidth())/2);
         label.setY(buttonY + 100);
         stage.addActor(label);
 
-        playButton = new TextButton("Play", skin);
 		playButton.setX(buttonX);
 		playButton.setY(buttonY);
 		playButton.setWidth(buttonWidth);
@@ -55,12 +49,13 @@ public class MenuScreen implements Screen {
             public void touchUp(InputEvent event, float x, float y, int pointer, int button )
             {
                 super.touchUp( event, x, y, pointer, button );
+                //reset the level back to 1, start the game
+                engine.getStateManager().restartGame();
                 engine.setScreen(engine.getGameScr());
             }
         } );
 		stage.addActor(playButton);
 
-		highScoresButton = new TextButton("High Scores", skin);
 		highScoresButton.setX(buttonX);
 		highScoresButton.setY(buttonY - buttonHeight - buttonSpacing);
 		highScoresButton.setWidth(buttonWidth);
@@ -75,7 +70,11 @@ public class MenuScreen implements Screen {
             }
         } );
         stage.addActor(highScoresButton);
-        
+	}
+	
+	@Override
+	public void show()
+	{
         Gdx.input.setInputProcessor(stage);
 	}
 	
@@ -84,8 +83,7 @@ public class MenuScreen implements Screen {
 	{		
 		stage.act(dTime);
 		
-		Gdx.gl.glClearColor(0.586f, 0.781f, 1.0f, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+		super.render(dTime);
         
         stage.draw();
 	}
@@ -101,23 +99,5 @@ public class MenuScreen implements Screen {
 	{	
 		skin.dispose();
 		stage.dispose();
-	}
-
-	@Override
-	public void resize(int width, int height) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void pause() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void resume() {
-		// TODO Auto-generated method stub
-		
 	}
 }

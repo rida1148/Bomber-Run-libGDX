@@ -3,11 +3,9 @@ package com.sednihp.bomberrun.Screens;
 import java.util.Iterator;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -17,14 +15,14 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
 import com.sednihp.bomberrun.Engine;
+import com.sednihp.bomberrun.Timer;
 import com.sednihp.bomberrun.Entities.Plane;
 import com.sednihp.bomberrun.Entities.Building;
 import com.sednihp.bomberrun.Entities.Bomb;
 import com.sednihp.bomberrun.Entities.Cloud;
 
-public class GameScreen implements Screen {
+public class GameScreen extends BaseScreen {
 	
-	private Engine engine;
 	private SpriteBatch batch;
 	private BitmapFont font;
 	private Texture planeImg, bombImg, cloudImg;
@@ -39,11 +37,11 @@ public class GameScreen implements Screen {
 	private Bomb bomb;
 	private Music planeEngine;
 	private Sound explosion;
-	private int score = 0;
+	private Timer endGameTimer;
 	
 	public GameScreen(Engine e) 
 	{
-		engine = e;
+		super(e);
 		
 		font = new BitmapFont(Gdx.files.internal("saucerbb.fnt"), false);
 		batch = new SpriteBatch();
@@ -53,6 +51,9 @@ public class GameScreen implements Screen {
   		planeEngine = Gdx.audio.newMusic(Gdx.files.internal("plane.ogg"));
   		explosion = Gdx.audio.newSound(Gdx.files.internal("explosion.ogg"));
   		shapeRender = new ShapeRenderer();
+  		groundLine = new Rectangle(0,30,engine.getWidth(),1);
+  		groundColor = new Color(0.554f, 0.316f, 0.234f, 0);
+  		endGameTimer = new Timer();
 	}
 	
 	@Override
@@ -60,22 +61,15 @@ public class GameScreen implements Screen {
 	{		
 		camera = new OrthographicCamera();
 		camera.setToOrtho(false, engine.getWidth(), engine.getHeight());
-  		groundLine = new Rectangle(0,30,engine.getWidth(),1);
-  		groundColor = new Color(0.554f, 0.316f, 0.234f, 0);
   		
-  		plane = new Plane(engine.getHeight());
+  		plane = new Plane(engine.getHeight(), engine.getStateManager().getCurrentLevel());
   		
-  		buildings = new Array<Building>();
-  		for(int i = 0; i < 1; ++i)
-  		{
-  			Building b = new Building(160 + i*32);
-  			buildings.add(b);
-  		}
+  		createBuildings();
   		
   		bomb = null;
   		
   		clouds = new Array<Cloud>();
-  		for(int i=0; i<2;++i) 
+  		for(int i=0; i<3;++i) 
   		{
   			Cloud c = new Cloud(engine.getWidth(), engine.getHeight(), groundLine.y);
   			clouds.add(c);
@@ -84,6 +78,33 @@ public class GameScreen implements Screen {
   		planeEngine.setLooping(true);
   		planeEngine.play();
     }
+	
+	public void createBuildings()
+	{
+		buildings = new Array<Building>();
+		int numBuildings = 0;
+  		switch(engine.getStateManager().getCurrentLevel())
+  		{
+	  		case 1: numBuildings = 15;
+	  				break;
+	  		case 2: numBuildings = 17;
+	  				break;
+	  		case 3: numBuildings = 19;
+	  				break;
+	  		case 4: numBuildings = 21;
+	  				break;
+	  		case 5: numBuildings = 23;
+	  				break;
+	  		default: numBuildings = 25;
+	  				 break;
+  		}
+  		//numBuildings = 1;	  		
+		for(int i = 0; i < numBuildings; ++i)
+  		{
+  			Building b = new Building(numBuildings, i, engine.getWidth());
+  			buildings.add(b);
+  		}
+	}
 	
 	@Override
 	public void render(float dTime)
@@ -110,15 +131,7 @@ public class GameScreen implements Screen {
 				
 		updateBomb(dTime);
 		
-		if(buildings.size == 0)
-		{
-			plane.setToPark();
-		}
-		
-		if(plane.isParked())
-		{
-			engine.setScreen(engine.getMenuScr());
-		}
+		updateState();
 	}
 	
 	private void updateClouds(final float dTime) 
@@ -147,13 +160,8 @@ public class GameScreen implements Screen {
 		    	{
 		    		plane.hasCrashed();
 		    		planeEngine.stop();
-		    		engine.setScreen(new MenuScreen(engine));
 		    	}
 		    }
-		}
-		else if(plane.isParked())
-		{
-			
 		}
 	}
 	
@@ -173,7 +181,7 @@ public class GameScreen implements Screen {
 		    	
 		    	if(b.overlaps(bomb))
 		    	{
-		    		score += b.getScore();
+		    		engine.getPlayer().addToScore(b.getScore());
 		    		bIter.remove();
 		    		removeBomb = true;
 		    	}		    	
@@ -193,10 +201,34 @@ public class GameScreen implements Screen {
 		}
 	}
 	
+	private void updateState()
+	{
+		//if we've destroyed all the buildings, set the plane to park
+		if(buildings.size == 0)
+		{
+			plane.setToPark();
+		}
+		
+		//if the plane has parked, start a timer so we don't exit straight away
+		if(plane.isParked() && !endGameTimer.isRunning())
+		{
+			endGameTimer.start();
+		}		
+		//if the plane has been parked for over 2s, go to the lvlOverScreen
+		else if(plane.isParked() && endGameTimer.getTime() > 2000)
+		{
+			engine.setScreen(engine.getLvlOverScr());
+		}
+		//if the plane has crashed, go to the lvlOverScr immediately
+		else if(plane.hasCrashed())
+		{
+			engine.setScreen(engine.getLvlOverScr());
+		}
+	}
+	
 	private void draw(float dTime) 
 	{
-		Gdx.gl.glClearColor(0.586f, 0.781f, 1.0f, 1);
-		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+		super.render(dTime);
 		camera.update();
 		
 		batch.setProjectionMatrix(camera.combined);
@@ -212,7 +244,7 @@ public class GameScreen implements Screen {
 			}
 			
 			batch.draw(planeImg, plane.x, plane.y);
-			font.draw(batch, "Score = " + score, 0, groundLine.y);
+			font.draw(batch, "Score = " + engine.getPlayer().getLevelScore(), 0, groundLine.y);
 		batch.end();
 
 		shapeRender.setProjectionMatrix(camera.combined);
@@ -236,7 +268,6 @@ public class GameScreen implements Screen {
 		planeEngine.dispose();
 		explosion.dispose();
 		shapeRender.dispose();
-		
 		font.dispose();
 		batch.dispose();
     }
@@ -244,24 +275,8 @@ public class GameScreen implements Screen {
 	@Override
 	public void hide()
 	{
-	}
-
-	@Override
-	public void resize(int width, int height) {
-		// TODO Auto-generated method stub
+		super.hide();
 		
+		endGameTimer.stop();
 	}
-
-	@Override
-	public void pause() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void resume() {
-		// TODO Auto-generated method stub
-		
-	}
-	
 }

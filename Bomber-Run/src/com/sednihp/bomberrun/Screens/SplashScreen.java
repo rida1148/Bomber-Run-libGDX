@@ -6,8 +6,6 @@ import static com.badlogic.gdx.scenes.scene2d.actions.Actions.fadeOut;
 import static com.badlogic.gdx.scenes.scene2d.actions.Actions.sequence;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Screen;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.Action;
@@ -18,18 +16,22 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Scaling;
 import com.sednihp.bomberrun.Engine;
 
-public class SplashScreen implements Screen {
+public class SplashScreen extends BaseScreen {
 
-	private Engine engine;
 	private Texture logoImg;
 	private Image logo;
 	private Stage stage;
 	
 	public SplashScreen(Engine e) 
 	{
-		engine = e;
-		stage = new Stage(0, 0, true);
+		super(e);
+		stage = new Stage(engine.getWidth(), engine.getHeight(), true);
 		logoImg = new Texture(Gdx.files.internal("logo.png"));
+		
+		TextureRegion planeRegion = new TextureRegion(logoImg);
+        Drawable planeDrawable = new TextureRegionDrawable( planeRegion );
+
+        logo = new Image(planeDrawable, Scaling.stretch );
 	}
 
 	@Override
@@ -37,11 +39,6 @@ public class SplashScreen implements Screen {
 	{		
 		stage.setViewport(engine.getWidth(), engine.getHeight(), true );
         stage.clear();
-        
-        TextureRegion planeRegion = new TextureRegion(logoImg);
-        Drawable planeDrawable = new TextureRegionDrawable( planeRegion );
-
-        logo = new Image(planeDrawable, Scaling.stretch );
         
         logo.getColor().a = 0f;
         
@@ -61,8 +58,7 @@ public class SplashScreen implements Screen {
 	{
 		stage.act(dTime);
 		
-		Gdx.gl.glClearColor(0.586f, 0.781f, 1.0f, 1);
-        Gdx.gl.glClear( GL20.GL_COLOR_BUFFER_BIT );	
+		super.render(dTime);
 		
 		stage.draw();
 	}
@@ -72,30 +68,5 @@ public class SplashScreen implements Screen {
 	{
 		logoImg.dispose();
 		stage.dispose();
-    }
-
-	@Override
-	public void resize(int width, int height) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void hide() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void pause() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void resume() {
-		// TODO Auto-generated method stub
-		
-	}
-	
+    }	
 }

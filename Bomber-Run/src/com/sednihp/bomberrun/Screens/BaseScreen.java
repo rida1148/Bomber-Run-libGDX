@@ -1,20 +1,29 @@
 package com.sednihp.bomberrun.Screens;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.sednihp.bomberrun.Engine;
 
 public class BaseScreen implements Screen {
 
 	protected Engine engine;
+	protected final float buttonWidth = 300f, buttonHeight = 60f, buttonSpacing = 20f;
+	protected final Color bgColor;
 	
 	public BaseScreen(Engine e) 
 	{
 		this.engine = e;
+		bgColor = new Color(0.586f, 0.781f, 1.0f, 1);
+		
 	}
 	
 	@Override
 	public void render(float dTime) 
 	{
+		Gdx.gl.glClearColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
+		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 	}
 
 	@Override
@@ -29,8 +38,7 @@ public class BaseScreen implements Screen {
 
 	@Override
 	public void hide() 
-	{
-		dispose();
+	{		
 	}
 
 	@Override
@@ -47,5 +55,4 @@ public class BaseScreen implements Screen {
 	public void dispose()
 	{
 	}
-
 }
