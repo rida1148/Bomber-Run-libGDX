@@ -10,10 +10,13 @@ public class Cloud extends Rectangle {
 	private int direction;
 	private final int speed;
 
-	public Cloud(final int scrWidth, final int scrHeight, final float ground) {
+	public Cloud(final int scrWidth, final int scrHeight, final float ground) 
+	{
 		super(0, 0, 150, 100);
+		
 		Random rand = new Random();
-		switch(rand.nextInt(2)) {
+		switch(rand.nextInt(2)) 
+		{
 			case 0: super.setX(0);
 					direction = 1;
 					break;
@@ -21,10 +24,11 @@ public class Cloud extends Rectangle {
 					direction = -1;
 					break;
 		}
-		int y = rand.nextInt(scrHeight - (int)super.height - (int)ground);
-		super.setY(y + ground);
 		
-		speed = rand.nextInt(20) + 40;
+		float y = rand.nextFloat();
+		super.setY((y * (scrHeight-ground-this.height)) + ground);
+		
+		speed = rand.nextInt(30) + 40;
 	}
 	
 	public void move(final float dTime, final int scrWidth) {

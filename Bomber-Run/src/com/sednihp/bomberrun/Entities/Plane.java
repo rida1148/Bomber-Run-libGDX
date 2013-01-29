@@ -6,12 +6,11 @@ import com.badlogic.gdx.math.Vector2;
 public class Plane extends Rectangle {
 
 	private static final long serialVersionUID = 1L;
-	private int speed = 70, speedIncrease, stepDown;
-	private boolean parking = false;
-	private boolean landed = false;
-	private boolean parked = false;
-	private boolean crashed = false;
+	private int speed = 60, speedIncrease, stepDown;
 	private Vector2 direction;
+	private enum PlaneState {FLYING, PARKING, LANDED, PARKED, CRASHED};
+	private PlaneState currentState = PlaneState.FLYING;
+	private float landingX = 0, parkingX = 0;
 
 	public Plane(final int scrHeight, final int level)
 	{
@@ -24,35 +23,41 @@ public class Plane extends Rectangle {
 		stepDown = 10;
 	}
 	
+	//only set the plane to park if it is flying
+	public void setToPark() 
+	{
+		if(currentState == PlaneState.FLYING)
+		{
+			currentState = PlaneState.PARKING;
+		}
+	}
+	
 	public boolean isParking()
 	{
-		return parking;
+		return currentState == PlaneState.PARKING;
 	}
 	
 	public boolean isParked() 
-	{
-		return parked;
+	{		
+		return currentState == PlaneState.PARKED;
 	}
 	
-	public void setToPark() 
-	{
-		parking = true;
-	}
-	
-	public void crashedIntoBuilding() 
+	public void setToCrashed() 
 	{
 		speed = 0;
-		crashed = true;
+		currentState = PlaneState.CRASHED;
 	}
 	
 	public boolean hasCrashed() 
 	{
-		return crashed;
+		return currentState == PlaneState.CRASHED;
 	}
 	
-	public void move(final float dTime, final int scrWidth, final int groundLevel)
+	public void move(final float dTime, final int scrWidth, final float groundLevel)
 	{
-		if(!parking) 
+		//if the plane is flying move it across the screen
+		//when it clears the RHS wrap round to the LHS, move down and speed up
+		if(currentState == PlaneState.FLYING) 
 		{
 			super.x += direction.x * speed * dTime;
 			
@@ -61,42 +66,45 @@ public class Plane extends Rectangle {
 				super.x = -width;
 				super.y -= stepDown;
 				speed += speedIncrease;
-				System.out.println("Speed = " + speed);
 			}
 		}
-		else 
+		//if the plane is no longer flying but is parking or landed
+		else
 		{
 			speed = 140;
-			int landingX = scrWidth - 4*(int)super.width;
-			int parkingX = scrWidth - 2*(int)super.width;
-			int parkingY = groundLevel;
 			
 			direction.nor();
 			
 			super.x += direction.x * speed * dTime;
 			
+			//only set the plane's vector up to park when it has come back round to the LHS of the screen
 			if(super.x > scrWidth) 
 			{
 				super.x = -width;
 				
+				landingX = scrWidth - 4*super.width;
+				parkingX = scrWidth - 2*super.width;
+				
 				direction.x = landingX - super.x;
-				direction.y = super.y - parkingY;
+				direction.y = super.y - groundLevel;
 				
 				direction.nor();
 			}
 
 			super.y -= direction.y * speed * dTime;
 			
-			if(!landed && super.x >= landingX && super.y <= parkingY)
+			//if the plane is parking and has reached the ground set it to landed
+			if(currentState == PlaneState.PARKING && super.y <= groundLevel)
 			{
-				landed = true;
-				direction.set(parkingX - super.x, 0);
+				currentState = PlaneState.LANDED;
+				direction.set(1, 0);
 			}
-			else if(landed && super.x >= parkingX)
+			//if the plane has landed and reached its parking spot, stop it
+			else if(currentState == PlaneState.LANDED && super.x >= parkingX)
 			{
-				parked = true;
+				currentState = PlaneState.PARKED;
+				speed = 0;
 			}
-			
 		}
 	}
 }

@@ -21,8 +21,8 @@ import com.sednihp.bomberrun.Entities.Building;
 import com.sednihp.bomberrun.Entities.Bomb;
 import com.sednihp.bomberrun.Entities.Cloud;
 
-public class GameScreen extends BaseScreen {
-	
+public class GameScreen extends BaseScreen 
+{
 	private SpriteBatch batch;
 	private BitmapFont font;
 	private Texture planeImg, bombImg, cloudImg;
@@ -30,13 +30,12 @@ public class GameScreen extends BaseScreen {
 	private ShapeRenderer shapeRender;
 	private Rectangle groundLine;
 	private Color groundColor;
-	
 	private Plane plane;
 	private Array<Building> buildings;
 	private Array<Cloud> clouds;
 	private Bomb bomb;
 	private Music planeEngine;
-	private Sound explosion;
+	private Sound explosion, crash;
 	private Timer endGameTimer;
 	
 	public GameScreen(Engine e) 
@@ -47,19 +46,20 @@ public class GameScreen extends BaseScreen {
 		batch = new SpriteBatch();
 		planeImg = new Texture(Gdx.files.internal("plane.png"));
 		bombImg = new Texture(Gdx.files.internal("bomb.png"));
-		cloudImg = new Texture(Gdx.files.internal("cloud.png"));
+		cloudImg = new Texture(Gdx.files.internal("cloud2.png"));
   		planeEngine = Gdx.audio.newMusic(Gdx.files.internal("plane.ogg"));
   		explosion = Gdx.audio.newSound(Gdx.files.internal("explosion.ogg"));
+  		crash = Gdx.audio.newSound(Gdx.files.internal("crash.ogg"));
   		shapeRender = new ShapeRenderer();
   		groundLine = new Rectangle(0,30,engine.getWidth(),1);
   		groundColor = new Color(0.554f, 0.316f, 0.234f, 0);
   		endGameTimer = new Timer();
+  		camera = new OrthographicCamera();
 	}
 	
 	@Override
     public void show() 
 	{		
-		camera = new OrthographicCamera();
 		camera.setToOrtho(false, engine.getWidth(), engine.getHeight());
   		
   		plane = new Plane(engine.getHeight(), engine.getStateManager().getCurrentLevel());
@@ -69,7 +69,7 @@ public class GameScreen extends BaseScreen {
   		bomb = null;
   		
   		clouds = new Array<Cloud>();
-  		for(int i=0; i<3;++i) 
+  		for(int i=0; i<2;++i) 
   		{
   			Cloud c = new Cloud(engine.getWidth(), engine.getHeight(), groundLine.y);
   			clouds.add(c);
@@ -82,26 +82,30 @@ public class GameScreen extends BaseScreen {
 	public void createBuildings()
 	{
 		buildings = new Array<Building>();
-		int numBuildings = 0;
+		
+		int numBuildings = 0, maxStoreys = 0;
   		switch(engine.getStateManager().getCurrentLevel())
   		{
-	  		case 1: numBuildings = 15;
+	  		case 1: numBuildings = maxStoreys = 15;
 	  				break;
-	  		case 2: numBuildings = 17;
+	  		case 2: numBuildings = maxStoreys = 17;
 	  				break;
-	  		case 3: numBuildings = 19;
+	  		case 3: numBuildings = maxStoreys = 19;
 	  				break;
 	  		case 4: numBuildings = 21;
+	  				maxStoreys = 20;
 	  				break;
-	  		case 5: numBuildings = 23;
+	  		case 5: numBuildings = maxStoreys = 23;
+	  				maxStoreys = 20;
 	  				break;
-	  		default: numBuildings = 25;
+	  		default: numBuildings = maxStoreys = 25;
+	  				maxStoreys = 20;
 	  				 break;
   		}
-  		//numBuildings = 1;	  		
+
 		for(int i = 0; i < numBuildings; ++i)
   		{
-  			Building b = new Building(numBuildings, i, engine.getWidth());
+  			Building b = new Building(numBuildings, i, engine.getWidth(), groundLine.y + groundLine.height, maxStoreys);
   			buildings.add(b);
   		}
 	}
@@ -118,8 +122,8 @@ public class GameScreen extends BaseScreen {
 	{
 		if(Gdx.input.isTouched() && bomb == null) 
 		{
-        	 float x = plane.x + (plane.width / 2);
-        	 bomb = new Bomb(x, plane.y);
+			float x = plane.x + (plane.width / 2);
+        	bomb = new Bomb(x, plane.y);
 		}
 	}
 	
@@ -148,7 +152,7 @@ public class GameScreen extends BaseScreen {
 	{
 		if(!plane.isParked())
 		{
-			plane.move(dTime, engine.getWidth(), (int)(groundLine.y + groundLine.height));
+			plane.move(dTime, engine.getWidth(), groundLine.y + groundLine.height);
 			
 			//check if plane has hit a building
 			Iterator<Building> pIter = buildings.iterator();
@@ -156,9 +160,10 @@ public class GameScreen extends BaseScreen {
 		    {
 		    	Building b = pIter.next();
 		    	
-		    	if(b.overlaps(plane))
+		    	if(plane.overlaps(b))
 		    	{
-		    		plane.hasCrashed();
+		    		plane.setToCrashed();
+		    		crash.play(0.1f);
 		    		planeEngine.stop();
 		    	}
 		    }
@@ -181,8 +186,14 @@ public class GameScreen extends BaseScreen {
 		    	
 		    	if(b.overlaps(bomb))
 		    	{
-		    		engine.getPlayer().addToScore(b.getScore());
-		    		bIter.remove();
+		    		b.hitByBomb();
+
+		    		if(b.isDestroyed())
+		    		{
+		    			engine.getPlayer().addToScore(b.getScore());
+		    			bIter.remove();
+		    		}
+		    		
 		    		removeBomb = true;
 		    	}		    	
 		    }
@@ -203,7 +214,7 @@ public class GameScreen extends BaseScreen {
 	
 	private void updateState()
 	{
-		//if we've destroyed all the buildings, set the plane to park
+		//if we've destroyed all the buildings and the plane isn't already parking, set it to park
 		if(buildings.size == 0)
 		{
 			plane.setToPark();
@@ -214,13 +225,15 @@ public class GameScreen extends BaseScreen {
 		{
 			endGameTimer.start();
 		}		
+		
 		//if the plane has been parked for over 2s, go to the lvlOverScreen
-		else if(plane.isParked() && endGameTimer.getTime() > 2000)
+		if(plane.isParked() && endGameTimer.getTime() > 2000)
 		{
 			engine.setScreen(engine.getLvlOverScr());
 		}
+		
 		//if the plane has crashed, go to the lvlOverScr immediately
-		else if(plane.hasCrashed())
+		if(plane.hasCrashed())
 		{
 			engine.setScreen(engine.getLvlOverScr());
 		}
@@ -278,5 +291,6 @@ public class GameScreen extends BaseScreen {
 		super.hide();
 		
 		endGameTimer.stop();
+		planeEngine.stop();
 	}
 }
